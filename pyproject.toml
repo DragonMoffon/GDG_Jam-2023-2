@@ -1,0 +1,22 @@
+[project]
+name = 'Chonocide'
+version = '0.0'
+description = 'A 2.5d jRPG inspired narrative game for the GDG Jam 2 (2023)'
+readme = "READNE.md"
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License"
+]
+requires-python = ">= 3.12"
+dependencies = [
+    "arcade @ git+https://github.com/pythonarcade/arcade@development",
+    "digiformatter==0.5.7.2",
+    "nuitka"
+]
+
+[tool.setuptools]
+packages = ["chrono"]
+
+[project.scripts]
+chronocide = "chrono.chrono:main"

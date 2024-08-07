@@ -1,0 +1,29 @@
+# Compiled python
+*.pyc
+.pytest_cache
+*.egg-info
+build
+dist
+__pycache__
+
+# Visual Studio
+.vs
+*.pyproj
+*.pyproj.user
+*.sln
+*.code-workspace
+
+# Pycharm
+.idea/
+
+# venv
+venv/
+.libs/
+
+# Debug files
+/debug
+
+# Builds
+*.build/
+*.dist/
+*.build/
