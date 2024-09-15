@@ -2,6 +2,7 @@ from typing import Callable
 from contextlib import contextmanager
 import importlib.resources as pkg_resources
 
+from arcade import load_texture as load_arcade_texture, load_spritesheet as load_arcade_spritesheet, Texture, SpriteSheet
 import resources.audio as audio
 import resources.data as data
 import resources.fonts as fonts
@@ -15,7 +16,7 @@ __all__ = (
     "make_package_path_finder",
     "get_font_path",
     "get_wav_path",
-    "et_ogg_path",
+    "get_ogg_path",
     "get_data_path",
     "get_png_path",
     "get_shader_path",
@@ -116,4 +117,8 @@ get_data_text = make_package_string_loader(data, "toml")
 
 # open file
 open_png = make_package_file_opener(texts, "png")
+
+# load textures
+def load_texture(name: str) -> Texture: return load_arcade_texture(get_png_path(name))
+def load_spritesheet(name: str) -> SpriteSheet: return load_arcade_spritesheet(get_png_path(name))
 

@@ -1,26 +1,34 @@
 from arcade import Window as _Window, View
 from chrono.nav import Navigation, CreationNavigation, PreserveNavigation
 
-from chrono.game.game_view import Game
+from chrono.input import Input
+
 from chrono.menus.main_menu import MainMenu
+from chrono.game.game_view import GameView
 
 class Window(_Window):
 
     def __init__(self):
         super().__init__(1280, 720, "Chronocide - UoA GDG Jam 2")
+        Input.initialise()
+
         self._navigations: dict[str, Navigation] = {}
-        self._game_view: Game = None
+        self._game_view: GameView = None
 
     @classmethod
     def launch(cls):
         win = cls()
         win.register_nav("to_main_menu", CreationNavigation(MainMenu))
-        win._game_view = Game()
-        win.register_nav("to_game_sceneless", PreserveNavigation("to_game_sceneless", win._game_view, win._game_view.reset))
+        win._game_view = GameView()
+        win.register_nav("to_game_levelless", PreserveNavigation("to_game_levelless", win._game_view, win._game_view.reset))
 
         win.center_window()
         win.nav("to_main_menu")
         win.run()
+
+    def _dispatch_updates(self, delta_time: float) -> None:
+        Input.manager.update()
+        super()._dispatch_updates(delta_time)
 
     def register_nav(self, name: str, nav: Navigation, *, replace: bool = False) -> None:
         if not replace and name in self._navigations:
