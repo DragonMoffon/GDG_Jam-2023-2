@@ -9,7 +9,7 @@ from chrono.game.game_view import GameView
 class Window(_Window):
 
     def __init__(self):
-        super().__init__(1280, 720, "Chronocide - UoA GDG Jam 2")
+        super().__init__(1280, 720, "Chronocide - UoA GDG Jam 2", update_rate=1/1000)
         Input.initialise()
 
         self._navigations: dict[str, Navigation] = {}

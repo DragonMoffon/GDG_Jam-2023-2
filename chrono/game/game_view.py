@@ -6,16 +6,17 @@ from chrono.input import Input, ActionState
 # -- TEMP --
 from arcade.draw import draw_sprite
 
-PLAYER_MOVE_SPEED = 2000.0 # How fast the player accelerates left and right
+PLAYER_GROUND_SPEED = 2000.0 # How fast the player accelerates left and right
+PLAYER_AIR_SPEED = 1200.0
 PLAYER_JUMP_SPEED = 1000.0 # The velocity impules the player recieves upwards
 PLAYER_JUMP_FALL = 2000.0 # The acceleration of the player due to gravity while they are falling
 PLAYER_JUMP_RELEASE = 1250.0 # The acceleration of the player due to gravity while they are rising, but not jumping
 PLAYER_JUMP_HOLD = 1000.0 # The acceleration of the player due to gravity while they are rising and jumping
-PLAYER_DRAG = 0.05  # how much the air drags on the player, assumes the player is 100kg so we only deal with acceleration no forces
-PLAYER_FRICTION_HOLD = 0.001 # how much the ground resists player movement when they are travelling in that direction, assumes the player is 100kg so we only deal with acceleration no forces
-PLAYER_FRICTION_RELEASE = 0.8  # how much the ground resists player movement, assumes the player is 100kg so we only deal with acceleration no forces
-PLAYER_PENETRATION_MULTIPLIER = 10.0 # How much of a velocity impulse the player recieves while intersecting surfaces
+PLAYER_DRAG = 0.005  # how much the air drags on the player, assumes the player is 100kg so we only deal with acceleration no forces
+PLAYER_FRICTION_HOLD = 0.04 # how much the ground resists player movement when they are travelling in that direction, assumes the player is 100kg so we only deal with acceleration no forces
+PLAYER_FRICTION_RELEASE = 0.9  # how much the ground resists player movement, assumes the player is 100kg so we only deal with acceleration no forces
 
+PLAYER_CAYOTE = 1/15.0 # ~4 frames
 
 class GameView(View):
 
@@ -24,10 +25,13 @@ class GameView(View):
 
         # -- TEMP --
         self._player: Sprite = Sprite()
+        self._player.size = 32, 32
         self._player.position = Vec2(*self.window.center)
         self._player_velocity: Vec2 = Vec2()
         self._player_jumping: bool = False
+        self._player_jump_time: float = 0.0
         self._player_on_ground: bool = False
+        self._player_last_ground_time: float = 0.0
 
     def reset(self):
         pass
@@ -36,13 +40,16 @@ class GameView(View):
         match action:
             case 'jump':
                 self._player_jumping = action_state == ActionState.PRESSED
-                if not self._player_jumping or not self._player_on_ground:
+                if not self._player_jumping:
+                    return
+                self._player_jump_time = GLOBAL_CLOCK.time
+                if not self._player_on_ground and GLOBAL_CLOCK.time_since(self._player_last_ground_time) > PLAYER_CAYOTE:
                     return
                 self._player_velocity += Vec2(0.0, PLAYER_JUMP_SPEED)
             case 'left':
-                print('hmmm')
+                return
             case 'right':
-                print('wahahh')
+                return
                 
 
     def on_draw(self) -> bool | None:
@@ -57,15 +64,8 @@ class GameView(View):
             fall_acceleration = -Vec2(0.0, PLAYER_JUMP_FALL)
         self._player_velocity += fall_acceleration * delta_time
 
-        if self._player.center_y <= self._player.height/2.0:
-            collision_depth = Vec2(0.0, 1.0).dot(Vec2(0.0, self._player.height/2.0) - self._player.position)
-            print(collision_depth)
-            impulse = -1 * Vec2(0.0, 1.0).dot(self._player_velocity)
-            penetration_impulse = (1 + collision_depth * PLAYER_PENETRATION_MULTIPLIER)
-            self._player_velocity += (max(0.0, impulse) + penetration_impulse) * Vec2(0.0, 1.0)
-
         horizontal = Input.manager.axes_state['horizontal']
-        self._player_velocity += Vec2(horizontal * PLAYER_MOVE_SPEED * delta_time, 0.0)
+        self._player_velocity += Vec2(horizontal * (PLAYER_GROUND_SPEED if self._player_on_ground else PLAYER_AIR_SPEED) * delta_time, 0.0)
 
         v_length_sqr = self._player_velocity.length_squared()
         v_dir = self._player_velocity.normalize()
@@ -76,7 +76,17 @@ class GameView(View):
             self._player_velocity += drag * PLAYER_JUMP_FALL * delta_time * -v_dir
 
         self._player.position += self._player_velocity * delta_time
-        self._player_on_ground = self._player.center_y <= self._player.height/2.0
 
+        if self._player.center_y <= self._player.height/2.0:
+            collision_depth = Vec2(0.0, 1.0).dot(Vec2(0.0, self._player.height/2.0) - self._player.position)
+            impulse = -1 * Vec2(0.0, 1.0).dot(self._player_velocity)
+            self._player_velocity += max(0.0, impulse) * Vec2(0.0, 1.0)
+            self._player.position += collision_depth * Vec2(0.0, 1.0) 
 
-    
+        on_ground = self._player.center_y <= self._player.height/2.0
+        if on_ground and not self._player_on_ground and GLOBAL_CLOCK.time_since(self._player_jump_time) < PLAYER_CAYOTE:
+            self._player_velocity += Vec2(0.0, PLAYER_JUMP_SPEED)
+        
+        if not on_ground and self._player_on_ground:
+            self._player_last_ground_time = GLOBAL_CLOCK.time
+        self._player_on_ground = on_ground
