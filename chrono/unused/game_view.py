@@ -10,7 +10,13 @@ class Game(View):
         super().__init__()
         self.current_scene = None
 
-        self.text = Text("GAME TIME!", self.window.center_x, self.window.center_y, anchor_x='center', anchor_y='center')
+        self.text = Text(
+            "GAME TIME!",
+            self.window.center_x,
+            self.window.center_y,
+            anchor_x="center",
+            anchor_y="center",
+        )
 
         self.player: Combatant = Combatant()
         self.enemy: Combatant = Combatant()

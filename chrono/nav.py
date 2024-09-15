@@ -2,19 +2,24 @@ from arcade import View, get_window
 from typing import Callable
 from weakref import ref, ReferenceType
 
+
 def _kill_callback(name: str):
     # If a navigation for some reason becomes invalid 99% of the time we want it to get removed.
     def _kill(_):
         get_window().deregister_nav(name)  # type: ignore
+
     return _kill
+
 
 class Navigation:
 
     def navigate(self) -> View:
         raise NotImplementedError
-    
+
+
 # TODO: Create a Navigation that only works when leaving specific views / objects
 # I haven't yet cause a) maybe not needed b) requires weakref
+
 
 class CreationNavigation(Navigation):
     """
@@ -35,6 +40,7 @@ class CreationNavigation(Navigation):
     def navigate(self) -> View:
         return self._tgt(*self._args, **self._kwargs)
 
+
 class PreserveNavigation(Navigation):
     """
     Navigate to an exsisting view
@@ -47,4 +53,3 @@ class PreserveNavigation(Navigation):
     def navigate(self) -> View | None:
         self._clbk()
         return self._tgt()
-
