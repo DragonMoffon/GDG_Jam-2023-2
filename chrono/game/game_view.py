@@ -1,4 +1,4 @@
-from arcade import View, Sprite, Window, Vec2, SpriteList, check_for_collision_with_list
+from arcade import View, Sprite, Window, Vec2, SpriteList, check_for_collision_with_list, Text
 from arcade.clock import GLOBAL_CLOCK, Clock
 
 from chrono.input import Input, ActionState
@@ -35,6 +35,7 @@ class GameView(View):
         self._player.position = Vec2(*self.window.center)
         self._player_velocity: Vec2 = Vec2()
         self._player_jumping: bool = False
+        self._player_reversing_time: bool = False
         self._player_jump_time: float = 0.0
         self._player_on_ground: bool = False
         self._player_last_ground_time: float = 0.0
@@ -52,7 +53,7 @@ class GameView(View):
         self._platform_2_radius = self.window.center_y # half screen height
         self._platform_2.position = self._platform_2_core + Vec2(cos(0.0), sin(0.0)) * self._platform_2_radius
 
-        self._platform_period = 16.0
+        self._platform_period = 8.0
 
         self._contact_platform: Sprite = None
 
@@ -61,6 +62,9 @@ class GameView(View):
         self._ground.size = self.window.width, 16
         self._ground.position = self.window.center_x, 8
         self._ground.velocity = Vec2()
+
+        # -- TEMP TEXT --
+        self._reverse_text = Text('Reversed Time', self.window.center_x, self.window.center_y, font_size=24, anchor_x='center')
 
         self.level_sprites.extend((self._platform, self._platform_2, self._ground, self._player,))
         self.terrain_sprites.extend((self._platform, self._platform_2, self._ground))
@@ -83,7 +87,8 @@ class GameView(View):
             case 'right':
                 return
             case 'rewind':
-                if action_state == ActionState.PRESSED:
+                self._player_reversing_time = action_state == ActionState.PRESSED
+                if self._player_reversing_time:
                     self._manipulation_clock.set_tick_speed(-1.0)
                     self._player_clock.set_tick_speed(0.0)
                 else:
@@ -94,6 +99,10 @@ class GameView(View):
         self.clear()
         self.level_sprites.draw(pixelated=True)
         self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 255))
+        if self._player_reversing_time:
+            self._reverse_text.color = (int(255 * cos(tau * GLOBAL_CLOCK.time)**2),)*4
+            self._reverse_text.draw()
+
 
     def on_update(self, delta_time: float) -> bool | None:
         self._manipulation_clock.tick(GLOBAL_CLOCK.delta_time)
@@ -103,12 +112,12 @@ class GameView(View):
 
         next_pos = self._platform_start_pos + s * (self._platform_end_pos - self._platform_start_pos)
         diff = next_pos - self._platform.position
-        self._platform.velocity = diff
+        self._platform.velocity = diff / (self._manipulation_clock.dt or 1.0) # The difference is over one frame so the equvalent velocity requires a division by the frame time
         self._platform.position = next_pos
 
         next_pos = self._platform_2_core + Vec2(c, s) * self._platform_2_radius
         diff = next_pos - self._platform_2.position
-        self._platform_2.velocity = diff
+        self._platform_2.velocity = diff / (self._manipulation_clock.dt or 1.0) # The difference is over one frame so the equvalent velocity requires a division by the frame time
         self._platform_2.position = next_pos
 
         # Acceleration
@@ -119,7 +128,7 @@ class GameView(View):
         self._player_velocity += fall_acceleration * self._player_clock.dt
 
         horizontal = Input.manager.axes_state['horizontal']
-        self._player_velocity += Vec2(horizontal * (PLAYER_GROUND_SPEED if self._player_on_ground else PLAYER_AIR_SPEED) * delta_time, 0.0)
+        self._player_velocity += Vec2(horizontal * (PLAYER_GROUND_SPEED if self._player_on_ground else PLAYER_AIR_SPEED) * self._player_clock.dt, 0.0)
 
         v_length_sqr = self._player_velocity.length_squared()
         v_dir = self._player_velocity.normalize()
@@ -187,9 +196,6 @@ class GameView(View):
             impulse = -1 * normal.dot(self._player_velocity - terrain.velocity)
             self._player_velocity += max(0.0, impulse) * normal
             self._player.position += collision_depth * normal
-
-        if contact_platform is not None:
-            self._player_velocity += contact_platform.velocity
 
         # Player is on the 'ground'
         if on_ground and not self._player_on_ground:
