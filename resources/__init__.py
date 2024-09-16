@@ -142,12 +142,13 @@ open_png = make_package_file_opener(texts, "png", mode="rb")
 # load textures
 def load_texture(name: str) -> Texture:
     path = get_png_path(name)
-    im = Image.open(path)
-    if im.mode != "RGBA":
-        im = im.convert("RGBA")
-    data = ImageData(im)
-    texture = Texture(data)
-    texture.file_path = Path(path)
+    with open(path, "rb") as fp:
+        im = Image.open(fp)
+        if im.mode != "RGBA":
+            im = im.convert("RGBA")
+        data = ImageData(im)
+        texture = Texture(data)
+        texture.file_path = Path(path)
     return texture
 
 

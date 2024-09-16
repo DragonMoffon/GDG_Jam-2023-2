@@ -212,7 +212,6 @@ class CollisionConstraint(InequalityConstraint):
 
         diff_x = 2.0 * (bx - ax) / aw
         diff_y = 2.0 * (by - ay) / ah
-        abs_x = 
 
     def compute_impulse(self) -> float:
         pass
