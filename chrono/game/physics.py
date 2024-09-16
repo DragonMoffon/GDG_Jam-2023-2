@@ -1,10 +1,14 @@
 from __future__ import annotations
+import re
 from uuid import uuid4, UUID
 from dataclasses import dataclass
 
 from arcade import Vec2, XYWH
 from arcade.clock import Clock, GLOBAL_FIXED_CLOCK
 from arcade.types import Point2, Rect
+
+
+PHYSICS_CLOCK = Clock()
 
 
 @dataclass(slots=True, eq=True)
@@ -68,10 +72,10 @@ class Body:
             return
         self.acceleration += acceleration
 
-    def apply_impulse(self, velocity: Vec2):
+    def apply_impulse(self, momentum: Vec2):
         if self.static:
             return
-        self.velocity += velocity
+        self.velocity += momentum / self.mass
 
 
 class BodyGroup:
@@ -111,6 +115,14 @@ class Constraint[T: tuple[Body, ...] | Body]:
         raise NotImplementedError()
 
     def iterate(self):
+        delta = self.compute_impulse()
+        self.impulse = self.impulse + delta
+        self.apply_impulse(delta)
+
+
+class InequalityContraint[T: tuple[Body, ...] | Body](Constraint[T]):
+
+    def iterate(self):
         old_impulse = self.impulse
         delta = self.compute_impulse()
         self.impulse = max(0, self.impulse + delta)
@@ -118,17 +130,63 @@ class Constraint[T: tuple[Body, ...] | Body]:
         self.apply_impulse(delta)
 
 
-class StaticBounds(Constraint):
+BOUNDS_SLOP = 0.2
 
-    def __init__(self, bodies: tuple[Body, ...], bounds: Rect) -> None:
+
+class StaticBounds(InequalityContraint[Body]):
+
+    def __init__(self, bodies: Body, bounds: Rect) -> None:
         super().__init__(bodies)
         self.bounds = bounds
 
     def compute_impulse(self) -> float:
-        return super().compute_impulse()
+        bx, by = self.bounds.center
+        x, y = self.bodies.position
+        diff_x = 2.0 * (x - bx) / self.bounds.width
+        abs_x = abs(diff_x)
+        sub_x = abs(x - bx) + (self.bodies.size[0] - self.bounds.width) / 2.0
+        diff_y = 2.0 * (y - by) / self.bounds.height
+        abs_y = abs(diff_y)
+        sub_y = abs(y - by) + (self.bodies.size[1] - self.bounds.height) / 2.0
+        if diff_y >= abs_x:
+            normal = Vec2(0.0, -1.0)
+            depth = sub_y
+        elif -diff_y >= abs_x:
+            normal = Vec2(0.0, 1.0)
+            depth = sub_y
+        elif diff_x > abs_y:
+            normal = Vec2(-1.0, 0.0)
+            depth = sub_x
+        elif -diff_x > abs_y:
+            normal = Vec2(1.0, 0.0)
+            depth = sub_x
+        else:
+            raise ValueError
+
+        impulse = -self.bodies.velocity.dot(normal)
+        bias = BOUNDS_SLOP / PHYSICS_CLOCK.dt * max(0.0, depth - BOUNDS_SLOP)
+
+        return (impulse + bias) * self.bodies.mass
 
     def apply_impulse(self, impulse: float):
-        return super().apply_impulse(impulse)
+        bx, by = self.bounds.center
+        x, y = self.bodies.position
+        diff_x = 2.0 * (x - bx) / self.bounds.width
+        abs_x = abs(diff_x)
+        diff_y = 2.0 * (y - by) / self.bounds.height
+        abs_y = abs(diff_y)
+        if diff_y >= abs_x:
+            normal = Vec2(0.0, -1.0)
+        elif -diff_y >= abs_x:
+            normal = Vec2(0.0, 1.0)
+        elif diff_x > abs_y:
+            normal = Vec2(-1.0, 0.0)
+        elif -diff_x > abs_y:
+            normal = Vec2(1.0, 0.0)
+        else:
+            raise ValueError
+
+        self.bodies.apply_impulse(impulse * normal)
 
 
 class Force:
@@ -172,6 +230,30 @@ class StaticGravity(Force):
         body.apply_acceleration(self._pull)
 
 
+class Spring(Force):
+    # Apply a force proportional to the spring's extension
+
+    def __init__(
+        self, bodies: list[Body], source: Vec2, tension: float, length: float
+    ) -> None:
+        super().__init__(bodies)
+        self.source = source
+        self.tension = tension
+        self.length = length
+
+    def _iteration(self, body: Body):
+        diff = body.position - self.source
+        length = diff.length()
+        direction = diff / length
+        body.apply_acceleration(self.tension * (length - self.length) * direction)
+
+
+class Arbitrator:
+    # The arbitrator is used to keep track of collision pairs that are ongoing
+    # We use this to get warm starting on our contraints
+    pass
+
+
 # We actually break the No.1 rule of physics engines, keep the dt stable
 # but we only reverse it so it should be fine???
 ITERATION_NUMBER = 5
@@ -185,30 +267,58 @@ class Physics:
         self._last_states: dict[Body, StepState] = {}
         self._current_states: dict[Body, StepState] = {}
 
-        self._contraints: list[Constraint] = []
+        self._constraints: list[Constraint] = []
         self._forces: list[Force] = []
 
-        self._core_clock: Clock
+    def __getitem__(self, item: Body) -> StepState:
+        return self._current_states[item]
 
     def add_body(self, body: Body):
         if body in self._bodies:
             return
         self._bodies.append(body)
+        state = StepState(body.position, body.velocity)
+        self._last_states[body] = self._current_states[body] = state
 
     def remove_body(self, body: Body):
         if body not in self._bodies:
             return
         self._bodies.remove(body)
+        del self._last_states[body]
+        del self._current_states[body]
 
     def extend_bodies(self, bodies: list[Body]):
         self._bodies.extend(body for body in bodies if body not in self._bodies)
 
+    def add_force(self, force: Force):
+        if force in self._forces:
+            return
+        self._forces.append(force)
+
+    def remove_force(self, force: Force):
+        if force not in self._forces:
+            return
+        self._forces.remove(force)
+
+    def add_contraint(self, constraint: Constraint):
+        if constraint in self._constraints:
+            return
+        self._constraints.append(constraint)
+
+    def remove_constraint(self, constraint: Constraint):
+        if constraint not in self._constraints:
+            return
+        self._constraints.remove(constraint)
+
     def _iterate(self):
         """Run a single iteration of the impulse computation"""
-        pass
+        # In future will do smart checking with grouping and ignoring sleeping
+        # bodies, but for now lets just iterate over every constraint
+        for constrain in self._constraints:
+            constrain.iterate()
 
     def fixed_update(self):
-        self._core_clock.tick(GLOBAL_FIXED_CLOCK.dt)
+        PHYSICS_CLOCK.tick(GLOBAL_FIXED_CLOCK.dt)
 
         # Store previous
         for body in self._bodies:
