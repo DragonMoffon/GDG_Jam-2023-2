@@ -1,7 +1,6 @@
 from __future__ import annotations
 from uuid import uuid4, UUID
 from dataclasses import dataclass
-from typing import TypeVar
 
 from arcade import Vec2, XYWH
 from arcade.clock import Clock, GLOBAL_FIXED_CLOCK
