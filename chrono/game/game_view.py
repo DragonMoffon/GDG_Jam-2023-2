@@ -1,10 +1,14 @@
-from arcade import View, Sprite, Window, Vec2, SpriteList, check_for_collision_with_list, Text
+from arcade import Texture, View, Sprite, Window, Vec2, SpriteList, check_for_collision_with_list, Text
+import arcade
 from arcade.clock import GLOBAL_CLOCK, Clock
 
 from chrono.input import Input, ActionState
 
 # -- TEMP --
 from math import tau, sin, cos
+import resources
+import PIL.Image
+from arcade.experimental import Shadertoy
 
 PLAYER_GROUND_SPEED = 2000.0 # How fast the player accelerates left and right
 PLAYER_AIR_SPEED = 1200.0 # How fast the player accelerates left and right in the air
@@ -18,6 +22,13 @@ PLAYER_FRICTION_RELEASE = 0.9 # how much the ground resists player movement, ass
 
 PLAYER_CAYOTE = 1/15.0 # ~4 frames
 
+def get_texture(s: str) -> Texture:
+    with resources.open_png(s) as f:
+        image = PIL.Image.open(f)
+        image = image.convert("RGBA")
+        image.load()
+        return Texture(image)
+
 class GameView(View):
 
     def __init__(self, window: Window | None = None) -> None:
@@ -28,6 +39,22 @@ class GameView(View):
 
         self._manipulation_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
         self._player_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
+
+        self._bg = Sprite(get_texture("bg"))
+        self._bg.position = Vec2(*self.window.center)
+
+        self._noise = Sprite(get_texture("noise"))
+        self._noise.position = Vec2(*self.window.center)
+
+        self._shadertoy = Shadertoy.create_from_file((1280, 720), resources.get_shader_path("vhs"))
+        self.channel0 = self._shadertoy.ctx.framebuffer(
+            color_attachments=[self._shadertoy.ctx.texture((1280, 720), components=4)]
+        )
+        self.channel1 = self._shadertoy.ctx.framebuffer(
+            color_attachments=[self._shadertoy.ctx.texture((1280, 720), components=4)]
+        )
+        self._shadertoy.channel_0 = self.channel0.color_attachments[0]
+        self._shadertoy.channel_1 = self.channel1.color_attachments[0]
 
         # -- TEMP PLAYER --
         self._player: Sprite = Sprite()
@@ -41,13 +68,13 @@ class GameView(View):
         self._player_last_ground_time: float = 0.0
 
         # -- TEMP PLATFORM --
-        self._platform: Sprite = Sprite()
+        self._platform: Sprite = Sprite(get_texture("rectangle"))
         self._platform.size = 64, 16
         self._platform_start_pos = Vec2(48.0, 0.0)
         self._platform_end_pos = Vec2(48.0, 128.0)
         self._platform.position = self._platform_start_pos
 
-        self._platform_2: Sprite = Sprite()
+        self._platform_2: Sprite = Sprite(get_texture("square"))
         self._platform_2.size = 64, 64
         self._platform_2_core = Vec2(*self.window.center)
         self._platform_2_radius = self.window.center_y # half screen height
@@ -58,15 +85,15 @@ class GameView(View):
         self._contact_platform: Sprite = None
 
         # -- TEMP TERRAIN --
-        self._ground: Sprite = Sprite()
+        self._ground: Sprite = Sprite(get_texture("floor"))
         self._ground.size = self.window.width, 16
         self._ground.position = self.window.center_x, 8
         self._ground.velocity = Vec2()
 
         # -- TEMP TEXT --
-        self._reverse_text = Text('Reversed Time', self.window.center_x, self.window.center_y, font_size=24, anchor_x='center')
+        self._reverse_text = Text('REW <<', self.window.center_x, self.window.center_y, font_size=72, anchor_x='center', font_name = "VCR OSD Mono")
 
-        self.level_sprites.extend((self._platform, self._platform_2, self._ground, self._player,))
+        self.level_sprites.extend((self._bg, self._platform, self._platform_2, self._ground, self._player))
         self.terrain_sprites.extend((self._platform, self._platform_2, self._ground))
 
     def reset(self):
@@ -94,15 +121,35 @@ class GameView(View):
                 else:
                     self._manipulation_clock.set_tick_speed(1.0)
                     self._player_clock.set_tick_speed(1.0)
-                
-    def on_draw(self) -> bool | None:
-        self.clear()
+
+    def draw(self):
         self.level_sprites.draw(pixelated=True)
         self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 255))
         if self._player_reversing_time:
             self._reverse_text.color = (int(255 * cos(tau * GLOBAL_CLOCK.time)**2),)*4
             self._reverse_text.draw()
+            arcade.draw_text(f"({self._player_velocity.x:.3f}, {self._player_velocity.y:.3f})", self._player.position.x, self._player.position.y + 25, font_name = "CMU Classical Serif", italic = True, font_size = 18)
+            arcade.draw_line(self._player.position.x, self._player.position.y,
+                             self._player.position.x + self._player_velocity.x / 10, self._player.position.y + self._player_velocity.y / 10,
+                             color = arcade.color.WHITE, line_width = 3)
+            # TODO: Dragon, I'd love this to have an arrowhead, but that's going to need vector math.
+                
+    def on_draw(self) -> bool | None:
+        if self._player_reversing_time:
+            self.channel0.use()
+            self.channel0.clear()
+            self.draw()
 
+            self.channel1.use()
+            self.channel1.clear()
+            arcade.draw_sprite(self._noise)
+
+            self.window.use()
+            self.clear()
+            self._shadertoy.render()
+        else:
+            self.clear()
+            self.draw()
 
     def on_update(self, delta_time: float) -> bool | None:
         self._manipulation_clock.tick(GLOBAL_CLOCK.delta_time)

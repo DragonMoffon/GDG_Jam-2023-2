@@ -1,4 +1,4 @@
-from arcade import Window as _Window, View
+from arcade import Window as _Window, View, draw_text
 from chrono.nav import Navigation, CreationNavigation, PreserveNavigation
 
 from chrono.input import Input
@@ -11,6 +11,8 @@ class Window(_Window):
     def __init__(self):
         super().__init__(1280, 720, "Chronocide - UoA GDG Jam 2", update_rate=1/1000)
         Input.initialise()
+
+        draw_text("", 0, 0)
 
         self._navigations: dict[str, Navigation] = {}
         self._game_view: GameView = None

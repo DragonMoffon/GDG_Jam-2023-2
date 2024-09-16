@@ -116,7 +116,7 @@ get_shader_text = make_package_string_loader(shaders, "glsl")
 get_data_text = make_package_string_loader(data, "toml")
 
 # open file
-open_png = make_package_file_opener(texts, "png")
+open_png = make_package_file_opener(texts, "png", mode = "rb")
 
 # load textures
 def load_texture(name: str) -> Texture: return load_arcade_texture(get_png_path(name))
