@@ -115,7 +115,7 @@ def make_package_path_finder(package, data_type: str):
     def _path_finder(name: str):
         file_name = f"{name}.{data_type}"
         with pkg_resources.path(package, file_name) as path:
-            return path.absolute()
+            return path.resolve()
 
     return _path_finder
 

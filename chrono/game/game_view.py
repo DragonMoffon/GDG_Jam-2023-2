@@ -105,18 +105,18 @@ class GameView(View):
 
         # -- TEMP TERRAIN --
         self._ground: Sprite = Sprite(load_texture("floor"))
-        self._ground.size = self.window.width, 16
-        self._ground.position = self.window.center_x, 8
+        self._ground.size = self.window.width + 320, 160
+        self._ground.position = self.window.center_x, -80.0 + 8.0
         self._ground.velocity = Vec2()
 
         self._wall_1: Sprite = Sprite(load_texture("wall"))
-        self._wall_1.size = 16, self.window.height
-        self._wall_1.position = 8, self.window.center_y
+        self._wall_1.size = 160, self.window.height
+        self._wall_1.position = -80.0 + 8.0, self.window.center_y
         self._wall_1.velocity = Vec2()
 
         self._wall_2: Sprite = Sprite(load_texture("wall"))
-        self._wall_2.size = 16, self.window.height
-        self._wall_2.position = self.window.width - 8, self.window.center_y
+        self._wall_2.size = 160, self.window.height
+        self._wall_2.position = self.window.width + 80.0 - 8, self.window.center_y
         self._wall_2.velocity = Vec2()
 
         # -- TEMP TEXT --
@@ -155,6 +155,8 @@ class GameView(View):
         )
 
     def reset(self):
+        self._manipulation_clock._elapsed_time = 0.0
+        self._player_clock._elapsed_time = 0.0
         self.level_sprites: SpriteList[Sprite] = SpriteList()  # For rendering
         self.terrain_sprites: SpriteList[Sprite] = SpriteList(
             lazy=True
@@ -516,3 +518,9 @@ class GameView(View):
         )
 
         self._goal.update_animation(self._manipulation_clock.dt)
+
+        if (
+            abs(self._player.position.x) > 2 * self.window.width
+            or abs(self._player.position.y) > 2 * self.window.height
+        ):
+            self.reset()
