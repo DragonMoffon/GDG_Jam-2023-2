@@ -100,7 +100,7 @@ class GameView(View):
         self._platform_3.size = 64, 16
         self._platform_3.position = Vec2(*self.window.center)
         self._playform_close_time: float = float("inf")
-        self._platform_3_tigger: Sprite = Sprite(load_texture("Square"))
+        self._platform_3_tigger: Sprite = Sprite(load_texture("square"))
         self._platform_3_tigger.color = (255, 0, 0, 120)
         self._platform_3_tigger.size = 64, 64
         self._platform_3_tigger.position = Vec2(self.window.width - 32.0, 32.0)
