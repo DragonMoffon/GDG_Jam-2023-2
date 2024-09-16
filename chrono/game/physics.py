@@ -113,13 +113,16 @@ class Constraint:
     def apply_impulse(self, impulse: float):
         raise NotImplementedError()
 
+    def warm_start(self):
+        pass
+
     def iterate(self):
         delta = self.compute_impulse()
         self.impulse = self.impulse + delta
         self.apply_impulse(delta)
 
 
-class InequalityContraint(Constraint):
+class InequalityConstraint(Constraint):
 
     def iterate(self):
         old_impulse = self.impulse
@@ -133,7 +136,7 @@ BOUNDS_BIAS = 0.2  # percentage [0.1-0.3] recommended
 BOUNDS_SLOP = 2  # 'Allowed' Intersection in pixels
 
 
-class StaticBounds(InequalityContraint):
+class StaticBounds(InequalityConstraint):
 
     def __init__(self, bodies: Body, bounds: Rect) -> None:
         super().__init__(bodies)
@@ -191,6 +194,31 @@ class StaticBounds(InequalityContraint):
             raise ValueError
 
         self.bodies.apply_impulse(impulse * normal)
+
+
+COLLISION_BIAS = 0.2  # percentage [0.1-0.3] recommended
+COLLISION_SLOP = 2  # 'Allowed' Intersection in pixels
+
+
+class CollisionConstraint(InequalityConstraint):
+
+    def __init__(self, bodies: tuple[Body, Body]):
+        super().__init__(bodies)
+        self.a, self.b = bodies
+        ax, ay = self.a.position
+        aw, ah = self.a.size
+        bx, by = self.b.position
+        bw, bh = self.b.size
+
+        diff_x = 2.0 * (bx - ax) / aw
+        diff_y = 2.0 * (by - ay) / ah
+        abs_x = 
+
+    def compute_impulse(self) -> float:
+        pass
+
+    def apply_impulse(self, impulse: float):
+        pass
 
 
 class Force:
