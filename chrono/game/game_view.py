@@ -10,11 +10,12 @@ from arcade import (
 )
 from arcade.clock import GLOBAL_CLOCK, Clock
 
+from chrono.game.gif import GIF
 from chrono.input import Input, ActionState
 
 # -- TEMP --
 from math import tau, sin, cos
-from resources import get_shader_path, load_texture
+from resources import get_png_path, get_shader_path, load_texture
 from arcade.experimental import Shadertoy
 
 PLAYER_GROUND_SPEED = 2000.0  # How fast the player accelerates left and right
@@ -51,6 +52,9 @@ class GameView(View):
 
         self._noise = Sprite(load_texture("noise"))
         self._noise.position = Vec2(*self.window.center)
+
+        self._goal = GIF(get_png_path("goal"), 1, 29, 29, 30)
+        self._goal.position = Vec2(*self.window.center)
 
         self._shadertoy = Shadertoy.create_from_file(
             (1280, 720), get_shader_path("vhs")
@@ -130,6 +134,7 @@ class GameView(View):
                 self._platform,
                 self._platform_2,
                 self._ground,
+                self._goal,
                 self._player,
             )
         )
@@ -340,3 +345,5 @@ class GameView(View):
         self._player.scale_y = (
             max(1 + -self._player_velocity[1] / SQUISH_FACTOR, 0.5) * 0.25
         )
+
+        self._goal.update_animation(delta_time)
