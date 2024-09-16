@@ -1,6 +1,9 @@
-from arcade import View, Sprite, SpriteList, Vec2
+from arcade import View, Sprite, SpriteList, Vec2, XYWH
+from pyglet.window.key import N
 
 from chrono.game.physics import Body, StaticGravity, Physics, Spring, StaticBounds
+
+SPRING_TENSION = 100.0
 
 
 class PhysicsView(View):
@@ -33,3 +36,25 @@ class PhysicsView(View):
         self.physics.update()
         self.box_sprite.position = self.physics[self.box_body].position
         self.sprites.draw()
+
+    def on_mouse_press(
+        self, x: int, y: int, button: int, modifiers: int
+    ) -> bool | None:
+        p = Vec2(x, y)
+        s = self.physics[self.box_body]
+        b = XYWH(*s.position, *self.box_body.size)
+        if b.point_in_bounds(p):
+            d = (s.position - p).length()
+            self.spring = Spring([self.box_body], p, SPRING_TENSION, d)
+            self.physics.add_force(self.spring)
+
+    def on_mouse_release(
+        self, x: int, y: int, button: int, modifiers: int
+    ) -> bool | None:
+        if self.spring is not None:
+            self.physics.remove_force(self.spring)
+            del self.spring
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
+        if self.spring is not None:
+            self.spring.source = Vec2(x, y)
