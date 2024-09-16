@@ -70,9 +70,9 @@ class GameView(View):
         self._player_velocity: Vec2 = Vec2()
         self._player_jumping: bool = False
         self._player_reversing_time: bool = False
-        self._player_jump_time: float = 0.0
+        self._player_jump_time: float = -float("inf")
         self._player_on_ground: bool = False
-        self._player_last_ground_time: float = 0.0
+        self._player_last_ground_time: float = -float("inf")
 
         # -- TEMP PLATFORM --
         self._platform: Sprite = Sprite(load_texture("rectangle"))

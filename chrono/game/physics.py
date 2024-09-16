@@ -1,6 +1,7 @@
 from __future__ import annotations
 from uuid import uuid4, UUID
 from dataclasses import dataclass
+from typing import TypeVar
 
 from arcade import Vec2, XYWH
 from arcade.clock import Clock, GLOBAL_FIXED_CLOCK
@@ -92,12 +93,12 @@ class BodyGroup:
         return hash(tuple(self.bodies))
 
 
-class Constraint[T: tuple[Body, ...] | Body]:
+class Constraint:
     # A contraint on one or more bodies.
     # Contraints include collisions, but also motors etc
 
-    def __init__(self, bodies: T) -> None:
-        self.bodies: T = bodies
+    def __init__(self, bodies: Body | tuple[Body, ...]) -> None:
+        self.bodies: Body | tuple[Body, ...] = bodies
         self.impulse: float = 0.0
 
     def __eq__(self, value: object, /) -> bool:
@@ -119,7 +120,7 @@ class Constraint[T: tuple[Body, ...] | Body]:
         self.apply_impulse(delta)
 
 
-class InequalityContraint[T: tuple[Body, ...] | Body](Constraint[T]):
+class InequalityContraint(Constraint):
 
     def iterate(self):
         old_impulse = self.impulse
@@ -133,7 +134,7 @@ BOUNDS_BIAS = 0.2  # percentage [0.1-0.3] recommended
 BOUNDS_SLOP = 2  # 'Allowed' Intersection in pixels
 
 
-class StaticBounds(InequalityContraint[Body]):
+class StaticBounds(InequalityContraint):
 
     def __init__(self, bodies: Body, bounds: Rect) -> None:
         super().__init__(bodies)

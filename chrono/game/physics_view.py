@@ -61,12 +61,23 @@ class PhysicsView(View):
         draw_sprite(self._bg)
         self.physics.update()
         self.box_sprite.position = self.physics[self.box_body].position
-        if self.mouse_pos:
-            dist = sqrt((self.mouse_pos.x - self.box_sprite.position.x) ** 2 + (self.mouse_pos.y - self.box_sprite.position.y) ** 2)
+        if self.spring is not None:
+            point = self.spring.source
+            dist = sqrt(
+                (point.x - self.box_sprite.position.x) ** 2
+                + (point.y - self.box_sprite.position.y) ** 2
+            )
             p = perc(0, 1000, dist)
             r = lerp(0, 255, p)
             g = lerp(255, 0, p)
-            draw_line(self.box_sprite.position.x, self.box_sprite.position.y, self.mouse_pos.x, self.mouse_pos.y, (r, g, 0), 3)
+            draw_line(
+                self.box_sprite.position.x,
+                self.box_sprite.position.y,
+                point.x,
+                point.y,
+                (r, g, 0),
+                3,
+            )
         self.sprites.draw()
 
     def on_mouse_press(

@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/aura/Repos/GDG_Jam-2023-2/chrono.dist/__main__.py", line 4, in <module>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "/home/aura/Repos/GDG_Jam-2023-2/chrono.dist/chrono/chrono.py", line 1, in <module chrono.chrono>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "/home/aura/Repos/GDG_Jam-2023-2/chrono.dist/chrono/window.py", line 8, in <module chrono.window>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "/home/aura/Repos/GDG_Jam-2023-2/chrono.dist/chrono/game/physics_view.py", line 3, in <module chrono.game.physics_view>
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "/home/aura/Repos/GDG_Jam-2023-2/chrono.dist/chrono/game/physics.py", line 122, in <module chrono.game.physics>
+NameError: name 'T' is not defined
