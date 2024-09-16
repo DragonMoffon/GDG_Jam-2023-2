@@ -85,11 +85,21 @@ class GameView(View):
         self._ground.position = self.window.center_x, 8
         self._ground.velocity = Vec2()
 
+        self._wall_1: Sprite = Sprite(load_texture("wall"))
+        self._wall_1.size = 16, self.window.height
+        self._wall_1.position = 8, self.window.center_y
+        self._wall_1.velocity = Vec2()
+
+        self._wall_2: Sprite = Sprite(load_texture("wall"))
+        self._wall_2.size = 16, self.window.height
+        self._wall_2.position = self.window.width - 8, self.window.center_y
+        self._wall_2.velocity = Vec2()
+
         # -- TEMP TEXT --
         self._reverse_text = Text('REW <<', self.window.center_x, self.window.center_y, font_size=72, anchor_x='center', font_name = "VCR OSD Mono")
 
-        self.level_sprites.extend((self._bg, self._platform, self._platform_2, self._ground, self._player))
-        self.terrain_sprites.extend((self._platform, self._platform_2, self._ground))
+        self.level_sprites.extend((self._bg, self._wall_1, self._wall_2, self._platform, self._platform_2, self._ground, self._player))
+        self.terrain_sprites.extend((self._platform, self._platform_2, self._ground, self._wall_1, self._wall_2))
 
     def reset(self):
         pass
@@ -119,7 +129,7 @@ class GameView(View):
 
     def draw(self):
         self.level_sprites.draw(pixelated=True)
-        self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 64))
+        # self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 64))
         if self._player_reversing_time:
             self._reverse_text.color = (int(255 * cos(tau * GLOBAL_CLOCK.time)**2),)*4
             self._reverse_text.draw()
