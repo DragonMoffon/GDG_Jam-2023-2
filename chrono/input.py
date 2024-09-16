@@ -45,6 +45,7 @@ class Input:
         m.new_axis("horizontal")
 
         m.add_action_input("jump", Keys.SPACE)
+        m.add_action_input("jump", Keys.W)
         m.add_action_input("jump", ControllerButtons.BOTTOM_FACE)
         m.add_action_input("rewind", Keys.R)
         m.add_action_input("rewind", ControllerButtons.LEFT_SHOULDER)

@@ -2,7 +2,12 @@ from typing import Callable
 from contextlib import contextmanager
 import importlib.resources as pkg_resources
 
-from arcade import load_texture as load_arcade_texture, load_spritesheet as load_arcade_spritesheet, Texture, SpriteSheet
+from arcade import (
+    load_texture as load_arcade_texture,
+    load_spritesheet as load_arcade_spritesheet,
+    Texture,
+    SpriteSheet,
+)
 import resources.audio as audio
 import resources.data as data
 import resources.fonts as fonts
@@ -27,15 +32,15 @@ __all__ = (
 
 
 def make_package_file_opener(
-        package,
-        data_type: str,
-        mode: str = "r",
-        buffering: int = -1,
-        encoding: str | None = None,
-        errors: str | None = None,
-        newline: str | None = None,
-        closefd: bool = True,
-        opener: Callable[[str, int], int] | None = None
+    package,
+    data_type: str,
+    mode: str = "r",
+    buffering: int = -1,
+    encoding: str | None = None,
+    errors: str | None = None,
+    newline: str | None = None,
+    closefd: bool = True,
+    opener: Callable[[str, int], int] | None = None,
 ):
     """
     Create a reusable function for opening files of a particular type at a particular location
@@ -50,14 +55,14 @@ def make_package_file_opener(
 
     @contextmanager
     def _file_loader(
-            name: str,
-            _mode: str = mode,
-            _buffering: int = buffering,
-            _encoding: str | None = encoding,
-            _errors: str | None = errors,
-            _newline: str | None = newline,
-            _closefd: bool = closefd,
-            _opener: Callable[[str, int], int] | None = opener
+        name: str,
+        _mode: str = mode,
+        _buffering: int = buffering,
+        _encoding: str | None = encoding,
+        _errors: str | None = errors,
+        _newline: str | None = newline,
+        _closefd: bool = closefd,
+        _opener: Callable[[str, int], int] | None = opener,
     ):
         """
         Open a file with a predetermined type and location with given name.
@@ -72,7 +77,16 @@ def make_package_file_opener(
         file = None
         try:
             with pkg_resources.path(package, file_name) as path:
-                file = open(path, _mode, _buffering, _encoding, _errors, _newline, _closefd, _opener)
+                file = open(
+                    path,
+                    _mode,
+                    _buffering,
+                    _encoding,
+                    _errors,
+                    _newline,
+                    _closefd,
+                    _opener,
+                )
             yield file
         finally:
             if file is not None:
@@ -85,6 +99,7 @@ def make_package_string_loader(package, data_type: str, encoding: str = "utf-8")
     def _str_loader(name: str):
         file_name = f"{name}.{data_type}"
         return pkg_resources.read_text(package, file_name, encoding=encoding)
+
     return _str_loader
 
 
@@ -92,6 +107,7 @@ def make_package_binary_loader(package, data_type: str):
     def _binary_loader(name: str):
         file_name = f"{name}.{data_type}"
         return pkg_resources.read_binary(package, file_name)
+
     return _binary_loader
 
 
@@ -99,9 +115,10 @@ def make_package_path_finder(package, data_type: str):
     def _path_finder(name: str):
         file_name = f"{name}.{data_type}"
         with pkg_resources.path(package, file_name) as path:
-            return path
+            return path.absolute()
 
     return _path_finder
+
 
 # get path
 get_font_path = make_package_path_finder(fonts, "ttf")
@@ -116,9 +133,13 @@ get_shader_text = make_package_string_loader(shaders, "glsl")
 get_data_text = make_package_string_loader(data, "toml")
 
 # open file
-open_png = make_package_file_opener(texts, "png", mode = "rb")
+open_png = make_package_file_opener(texts, "png", mode="rb")
+
 
 # load textures
-def load_texture(name: str) -> Texture: return load_arcade_texture(get_png_path(name))
-def load_spritesheet(name: str) -> SpriteSheet: return load_arcade_spritesheet(get_png_path(name))
+def load_texture(name: str) -> Texture:
+    return load_arcade_texture(get_png_path(name))
 
+
+def load_spritesheet(name: str) -> SpriteSheet:
+    return load_arcade_spritesheet(get_png_path(name))
