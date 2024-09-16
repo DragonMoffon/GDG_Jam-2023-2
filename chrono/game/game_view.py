@@ -357,4 +357,7 @@ class GameView(View):
             max(1 + -self._player_velocity[1] / SQUISH_FACTOR, 0.5) * 0.25
         )
 
-        self._goal.update_animation(delta_time)
+        if self._player_reversing_time:
+            self._goal.update_animation(-delta_time)
+        else:
+            self._goal.update_animation(delta_time)
