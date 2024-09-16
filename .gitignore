@@ -29,3 +29,4 @@ venv/
 *.dist/
 *.build/
 *.bin
+err.txt
