@@ -92,6 +92,15 @@ class GameView(View):
             self._platform_2_core + Vec2(cos(0.0), sin(0.0)) * self._platform_2_radius
         )
 
+        self._platform_3: Sprite = Sprite(load_texture("rectangle"))
+        self._platform_3.size = 64, 16
+        self._platform_3.position = Vec2(*self.window.center)
+        self._playform_close_time: float = float("inf")
+        self._platform_3_tigger: Sprite = Sprite(load_texture("Square"))
+        self._platform_3_tigger.color = (255, 0, 0, 120)
+        self._platform_3_tigger.size = 64, 64
+        self._platform_3_tigger.position = Vec2(self.window.width - 32.0, 32.0)
+
         self._platform_period = 8.0
 
         self._contact_platform: Sprite = None
@@ -129,7 +138,9 @@ class GameView(View):
                 self._wall_2,
                 self._platform,
                 self._platform_2,
+                self._platform_3,
                 self._ground,
+                self._platform_3_tigger,
                 self._player,
             )
         )
