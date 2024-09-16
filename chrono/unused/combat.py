@@ -1,6 +1,7 @@
 """
 The Scene 
 """
+
 from arcade.clock import Clock
 
 
@@ -16,7 +17,7 @@ class Action:
         self.combatant: Combatant = None
         self.duration: int = 0
         self.start_time: int = 0
-    
+
     @property
     def finish_time(self) -> int:
         return self.start_time + self.duration
@@ -36,7 +37,11 @@ class Combat:
             self._clock.set_tick_speed(0.0)
 
     def _next_action(self):
-        if not self._action_queue or self._clock.time_since(self._action_queue[0].finish_time) < 0.0 or self._clock.speed == 0.0:
+        if (
+            not self._action_queue
+            or self._clock.time_since(self._action_queue[0].finish_time) < 0.0
+            or self._clock.speed == 0.0
+        ):
             return
         next_action = self._action_queue.pop(0)
         print(next_action)
@@ -47,7 +52,7 @@ class Combat:
 
         if action in self._action_queue:
             raise ValueError("Action already being undertaken")
-        
+
         action.combatant.next_free_time = action.finish_time
         self._insert_action(action)
 
@@ -57,5 +62,3 @@ class Combat:
             if action.finish_time > f_time:
                 self._action_queue.insert(idx, action)
                 break
-
-            
