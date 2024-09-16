@@ -154,9 +154,9 @@ class GameView(View):
                 ):
                     return
             case "left":
-                return
+                self._player.texture = self._left_tex
             case "right":
-                return
+                self._player.texture = self._right_tex
             case "rewind":
                 self._player_reversing_time = action_state == ActionState.PRESSED
                 if self._player_reversing_time:
