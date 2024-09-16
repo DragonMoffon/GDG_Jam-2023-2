@@ -155,7 +155,127 @@ class GameView(View):
         )
 
     def reset(self):
-        pass
+        self.level_sprites: SpriteList[Sprite] = SpriteList()  # For rendering
+        self.terrain_sprites: SpriteList[Sprite] = SpriteList(
+            lazy=True
+        )  # For player-ground colliusions
+
+        self._manipulation_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
+        self._player_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
+
+        self._bg = Sprite(load_texture("bg"))
+        self._bg.position = Vec2(*self.window.center)
+
+        self._noise = Sprite(load_texture("noise"))
+        self._noise.position = Vec2(*self.window.center)
+
+        self._goal = GIF(get_png_path("goal"), 1, 29, 29, 30)
+        self._goal.position = Vec2(*self.window.center)
+
+        self._shadertoy = Shadertoy.create_from_file(
+            (1280, 720), get_shader_path("vhs")
+        )
+        self.channel0 = self._shadertoy.ctx.framebuffer(
+            color_attachments=[self._shadertoy.ctx.texture((1280, 720), components=4)]
+        )
+        self.channel1 = self._shadertoy.ctx.framebuffer(
+            color_attachments=[self._shadertoy.ctx.texture((1280, 720), components=4)]
+        )
+        self._shadertoy.channel_0 = self.channel0.color_attachments[0]
+        self._shadertoy.channel_1 = self.channel1.color_attachments[0]
+
+        # -- TEMP PLAYER --
+        self._left_tex = load_texture("jiggycat")
+        self._right_tex = load_texture("jiggycat").flip_horizontally()
+        self._player: Sprite = Sprite(self._left_tex)
+        self._player.size = 32, 32
+        self._player.position = Vec2(self.window.center_x, 32.0)
+        self._player_velocity: Vec2 = Vec2()
+        self._player_jumping: bool = False
+        self._player_reversing_time: bool = False
+        self._player_jump_time: float = -float("inf")
+        self._player_on_ground: bool = False
+        self._player_last_ground_time: float = -float("inf")
+
+        # -- TEMP PLATFORM --
+        self._platform: Sprite = Sprite(load_texture("rectangle"))
+        self._platform.size = 64, 16
+        self._platform_start_pos = Vec2(48.0, 0.0)
+        self._platform_end_pos = Vec2(48.0, 128.0)
+        self._platform.position = self._platform_start_pos
+
+        self._platform_2: Sprite = Sprite(load_texture("square"))
+        self._platform_2.size = 64, 64
+        self._platform_2_core = Vec2(*self.window.center)
+        self._platform_2_radius = self.window.center_y  # half screen height
+        self._platform_2.position = (
+            self._platform_2_core + Vec2(cos(0.0), sin(0.0)) * self._platform_2_radius
+        )
+
+        self._platform_3: Sprite = Sprite(load_texture("square"))
+        self._platform_3.size = 64, 64
+        self._platform_3.velocity = Vec2()
+        self._platform_3.position = Vec2(*self.window.center)
+        self._platform_close_time: float = 0.0
+        self._platform_3_tigger: Sprite = Sprite(load_texture("square"))
+        self._platform_3_tigger.color = (255, 0, 0, 120)
+        self._platform_3_tigger.size = self.window.width, 64
+        self._platform_3_tigger.position = Vec2(self.window.center_x, 32.0)
+
+        self._platform_period = 8.0
+
+        self._contact_platform: Sprite = None
+
+        # -- TEMP TERRAIN --
+        self._ground: Sprite = Sprite(load_texture("floor"))
+        self._ground.size = self.window.width, 16
+        self._ground.position = self.window.center_x, 8
+        self._ground.velocity = Vec2()
+
+        self._wall_1: Sprite = Sprite(load_texture("wall"))
+        self._wall_1.size = 16, self.window.height
+        self._wall_1.position = 8, self.window.center_y
+        self._wall_1.velocity = Vec2()
+
+        self._wall_2: Sprite = Sprite(load_texture("wall"))
+        self._wall_2.size = 16, self.window.height
+        self._wall_2.position = self.window.width - 8, self.window.center_y
+        self._wall_2.velocity = Vec2()
+
+        # -- TEMP TEXT --
+        self._reverse_text = Text(
+            "REW <<",
+            self.window.center_x,
+            self.window.center_y,
+            font_size=72,
+            anchor_x="center",
+            font_name="VCR OSD Mono",
+        )
+
+        self.level_sprites.extend(
+            (
+                self._bg,
+                self._wall_1,
+                self._wall_2,
+                self._platform,
+                self._platform_2,
+                self._platform_3,
+                self._ground,
+                self._platform_3_tigger,
+                self._goal,
+                self._player,
+            )
+        )
+        self.terrain_sprites.extend(
+            (
+                self._platform,
+                self._platform_2,
+                self._platform_3,
+                self._ground,
+                self._wall_1,
+                self._wall_2,
+            )
+        )
 
     def on_action(self, action: str, action_state: ActionState):
         match action:
