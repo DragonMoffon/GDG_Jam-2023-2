@@ -1,6 +1,8 @@
 from typing import Callable
 from contextlib import contextmanager
 import importlib.resources as pkg_resources
+from pathlib import Path
+from PIL import Image
 
 from arcade import (
     load_texture as load_arcade_texture,
@@ -8,6 +10,7 @@ from arcade import (
     Texture,
     SpriteSheet,
 )
+from arcade.texture import ImageData
 import resources.audio as audio
 import resources.data as data
 import resources.fonts as fonts
@@ -115,7 +118,7 @@ def make_package_path_finder(package, data_type: str):
     def _path_finder(name: str):
         file_name = f"{name}.{data_type}"
         with pkg_resources.path(package, file_name) as path:
-            return path.resolve()
+            return path.absolute()
 
     return _path_finder
 
@@ -138,7 +141,14 @@ open_png = make_package_file_opener(texts, "png", mode="rb")
 
 # load textures
 def load_texture(name: str) -> Texture:
-    return load_arcade_texture(get_png_path(name))
+    path = get_png_path(name)
+    im = Image.open(path)
+    if im.mode != "RGBA":
+        im = im.convert("RGBA")
+    data = ImageData(im)
+    texture = Texture(data)
+    texture.file_path = Path(path)
+    return texture
 
 
 def load_spritesheet(name: str) -> SpriteSheet:
