@@ -1,4 +1,4 @@
-from arcade import Texture, View, Sprite, Window, Vec2, SpriteList, check_for_collision_with_list, Text
+from arcade import View, Sprite, Window, Vec2, SpriteList, Text
 import arcade
 from arcade.clock import GLOBAL_CLOCK, Clock
 
@@ -6,8 +6,7 @@ from chrono.input import Input, ActionState
 
 # -- TEMP --
 from math import tau, sin, cos
-import resources
-import PIL.Image
+from resources import get_shader_path, load_texture
 from arcade.experimental import Shadertoy
 
 PLAYER_GROUND_SPEED = 2000.0 # How fast the player accelerates left and right
@@ -19,15 +18,9 @@ PLAYER_JUMP_HOLD = 1000.0 # The acceleration of the player due to gravity while 
 PLAYER_DRAG = 0.005  # how much the air drags on the player, assumes the player is 100kg so we only deal with acceleration no forces
 PLAYER_FRICTION_HOLD = 0.04 # how much the ground resists player movement when they are travelling in that direction, assumes the player is 100kg so we only deal with acceleration no forces
 PLAYER_FRICTION_RELEASE = 0.9 # how much the ground resists player movement, assumes the player is 100kg so we only deal with acceleration no forces
+SQUISH_FACTOR = 1500
 
 PLAYER_CAYOTE = 1/15.0 # ~4 frames
-
-def get_texture(s: str) -> Texture:
-    with resources.open_png(s) as f:
-        image = PIL.Image.open(f)
-        image = image.convert("RGBA")
-        image.load()
-        return Texture(image)
 
 class GameView(View):
 
@@ -40,13 +33,13 @@ class GameView(View):
         self._manipulation_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
         self._player_clock: Clock = Clock(GLOBAL_CLOCK.time, GLOBAL_CLOCK.ticks)
 
-        self._bg = Sprite(get_texture("bg"))
+        self._bg = Sprite(load_texture("bg"))
         self._bg.position = Vec2(*self.window.center)
 
-        self._noise = Sprite(get_texture("noise"))
+        self._noise = Sprite(load_texture("noise"))
         self._noise.position = Vec2(*self.window.center)
 
-        self._shadertoy = Shadertoy.create_from_file((1280, 720), resources.get_shader_path("vhs"))
+        self._shadertoy = Shadertoy.create_from_file((1280, 720), get_shader_path("vhs"))
         self.channel0 = self._shadertoy.ctx.framebuffer(
             color_attachments=[self._shadertoy.ctx.texture((1280, 720), components=4)]
         )
@@ -57,7 +50,9 @@ class GameView(View):
         self._shadertoy.channel_1 = self.channel1.color_attachments[0]
 
         # -- TEMP PLAYER --
-        self._player: Sprite = Sprite()
+        self._left_tex = load_texture("jiggycat")
+        self._right_tex = load_texture("jiggycat").flip_horizontally()
+        self._player: Sprite = Sprite(self._left_tex)
         self._player.size = 32, 32
         self._player.position = Vec2(*self.window.center)
         self._player_velocity: Vec2 = Vec2()
@@ -68,13 +63,13 @@ class GameView(View):
         self._player_last_ground_time: float = 0.0
 
         # -- TEMP PLATFORM --
-        self._platform: Sprite = Sprite(get_texture("rectangle"))
+        self._platform: Sprite = Sprite(load_texture("rectangle"))
         self._platform.size = 64, 16
         self._platform_start_pos = Vec2(48.0, 0.0)
         self._platform_end_pos = Vec2(48.0, 128.0)
         self._platform.position = self._platform_start_pos
 
-        self._platform_2: Sprite = Sprite(get_texture("square"))
+        self._platform_2: Sprite = Sprite(load_texture("square"))
         self._platform_2.size = 64, 64
         self._platform_2_core = Vec2(*self.window.center)
         self._platform_2_radius = self.window.center_y # half screen height
@@ -85,7 +80,7 @@ class GameView(View):
         self._contact_platform: Sprite = None
 
         # -- TEMP TERRAIN --
-        self._ground: Sprite = Sprite(get_texture("floor"))
+        self._ground: Sprite = Sprite(load_texture("floor"))
         self._ground.size = self.window.width, 16
         self._ground.position = self.window.center_x, 8
         self._ground.velocity = Vec2()
@@ -110,9 +105,9 @@ class GameView(View):
                     return
                 self._player_velocity += Vec2(0.0, PLAYER_JUMP_SPEED)
             case 'left':
-                return
+                self._player.texture = self._left_tex
             case 'right':
-                return
+                self._player.texture = self._right_tex
             case 'rewind':
                 self._player_reversing_time = action_state == ActionState.PRESSED
                 if self._player_reversing_time:
@@ -124,7 +119,7 @@ class GameView(View):
 
     def draw(self):
         self.level_sprites.draw(pixelated=True)
-        self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 255))
+        self.level_sprites.draw_hit_boxes(color=(255, 255, 255, 64))
         if self._player_reversing_time:
             self._reverse_text.color = (int(255 * cos(tau * GLOBAL_CLOCK.time)**2),)*4
             self._reverse_text.draw()
@@ -156,6 +151,8 @@ class GameView(View):
         self._player_clock.tick(GLOBAL_CLOCK.delta_time)
         t = (self._manipulation_clock.time % self._platform_period) / self._platform_period
         c, s = cos(tau * t), sin(tau * t)
+
+        self._player.scale_y = max(1 + -self._player_velocity[1] / SQUISH_FACTOR, 0.5) * 0.25
 
         next_pos = self._platform_start_pos + s * (self._platform_end_pos - self._platform_start_pos)
         diff = next_pos - self._platform.position
@@ -253,5 +250,3 @@ class GameView(View):
             self._player_last_ground_time = self._player_clock.time
         self._player_on_ground = on_ground
         self._contact_platform = contact_platform
-
-        
