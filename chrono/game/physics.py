@@ -1,5 +1,4 @@
 from __future__ import annotations
-import re
 from uuid import uuid4, UUID
 from dataclasses import dataclass
 
@@ -130,7 +129,8 @@ class InequalityContraint[T: tuple[Body, ...] | Body](Constraint[T]):
         self.apply_impulse(delta)
 
 
-BOUNDS_SLOP = 0.2
+BOUNDS_BIAS = 0.2  # percentage [0.1-0.3] recommended
+BOUNDS_SLOP = 2  # 'Allowed' Intersection in pixels
 
 
 class StaticBounds(InequalityContraint[Body]):
@@ -148,6 +148,10 @@ class StaticBounds(InequalityContraint[Body]):
         diff_y = 2.0 * (y - by) / self.bounds.height
         abs_y = abs(diff_y)
         sub_y = abs(y - by) + (self.bodies.size[1] - self.bounds.height) / 2.0
+
+        if sub_x <= 0 and sub_y <= 0:
+            return 0.0
+
         if diff_y >= abs_x:
             normal = Vec2(0.0, -1.0)
             depth = sub_y
@@ -164,7 +168,7 @@ class StaticBounds(InequalityContraint[Body]):
             raise ValueError
 
         impulse = -self.bodies.velocity.dot(normal)
-        bias = BOUNDS_SLOP / PHYSICS_CLOCK.dt * max(0.0, depth - BOUNDS_SLOP)
+        bias = BOUNDS_BIAS / PHYSICS_CLOCK.dt * max(0.0, depth - BOUNDS_SLOP)
 
         return (impulse + bias) * self.bodies.mass
 
@@ -245,7 +249,7 @@ class Spring(Force):
         diff = body.position - self.source
         length = diff.length()
         direction = diff / length
-        body.apply_acceleration(self.tension * (length - self.length) * direction)
+        body.apply_acceleration(self.tension * (self.length - length) * direction)
 
 
 class Arbitrator:
@@ -332,7 +336,7 @@ class Physics:
             force.process()
 
         for body in self._bodies:
-            body.velocity += body.acceleration * self._core_clock.dt
+            body.velocity += body.acceleration * PHYSICS_CLOCK.dt
 
         # Run impulse iterations
         for _ in range(ITERATION_NUMBER):
@@ -340,7 +344,7 @@ class Physics:
 
         # Apply final velocities
         for body in self._bodies:
-            body.position += body.velocity * self._core_clock.dt
+            body.position += body.velocity * PHYSICS_CLOCK.dt
 
     def update(self):
         # interpolate between old position and new position for every body

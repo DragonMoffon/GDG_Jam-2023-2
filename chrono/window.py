@@ -5,6 +5,7 @@ from chrono.input import Input
 
 from chrono.menus.main_menu import MainMenu
 from chrono.game.game_view import GameView
+from chrono.game.physics_view import PhysicsView
 
 
 class Window(_Window):
@@ -17,6 +18,7 @@ class Window(_Window):
 
         self._navigations: dict[str, Navigation] = {}
         self._game_view: GameView = None
+        self._physics_view: PhysicsView = None
 
     @classmethod
     def launch(cls):
@@ -30,6 +32,13 @@ class Window(_Window):
             ),
         )
 
+        win._physics_view = PhysicsView()
+        win.register_nav(
+            "to_physics_demo",
+            PreserveNavigation(
+                "to_physics_demo", win._physics_view, win._physics_view.reset
+            ),
+        )
         win.center_window()
         win.nav("to_main_menu")
         win.run()

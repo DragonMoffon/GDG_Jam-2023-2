@@ -1,5 +1,4 @@
 from arcade import View, Sprite, SpriteList, Vec2, XYWH
-from pyglet.window.key import N
 
 from chrono.game.physics import Body, StaticGravity, Physics, Spring, StaticBounds
 
@@ -8,7 +7,7 @@ SPRING_TENSION = 100.0
 
 class PhysicsView(View):
 
-    def __init__(self, window: Window | None = None) -> None:
+    def __init__(self, window=None) -> None:
         super().__init__(window)
 
         self.physics = Physics()
@@ -17,16 +16,26 @@ class PhysicsView(View):
         self.box_sprite: Sprite = Sprite()
         self.box_sprite.size = 32, 32
         self.sprites.append(self.box_sprite)
+
         self.box_body: Body = Body(Vec2(*self.window.center), Vec2(), (32, 32), 1.0)
+        self.physics.add_body(self.box_body)
 
         self.body_map: dict[Body, Sprite] = {self.box_body: self.box_sprite}
 
         self.gravity: StaticGravity = StaticGravity(
             [self.box_body], Vec2(0.0, -1.0), 2000.0
         )
+        self.physics.add_force(self.gravity)
         self.spring: Spring = None
 
         self.bounds: StaticBounds = StaticBounds(self.box_body, self.window.rect)
+        self.physics.add_contraint(self.bounds)
+
+    def reset(self):
+        self.box_body.position = Vec2(*self.window.center)
+        self.box_body.velocity = Vec2()
+
+        self.spring = None
 
     def on_fixed_update(self, delta_time: float):
         self.physics.fixed_update()
@@ -53,7 +62,7 @@ class PhysicsView(View):
     ) -> bool | None:
         if self.spring is not None:
             self.physics.remove_force(self.spring)
-            del self.spring
+            self.spring = None
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool | None:
         if self.spring is not None:
