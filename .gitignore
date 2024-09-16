@@ -28,3 +28,4 @@ venv/
 *.build/
 *.dist/
 *.build/
+*.bin

@@ -197,32 +197,35 @@ class GameView(View):
             v_dir = self._player_velocity.normalize()
             offset = Vec2(-v_dir.y, v_dir.x)
             head = self._player.position + (self._player_velocity / 10)
-            l = head + ((-v_dir*10.0) + (10*offset))
-            r = head + ((-v_dir*10.0) - (10*offset))
+            l = head + ((-v_dir * 10.0) + (10 * offset))
+            r = head + ((-v_dir * 10.0) - (10 * offset))
             arcade.draw_line(
                 self._player.position.x,
                 self._player.position.y,
-                head.x, head.y,
+                head.x,
+                head.y,
                 color=arcade.color.WHITE,
                 line_width=3,
             )
             arcade.draw_line(
-                head.x, head.y, l.x, l.y,
+                head.x,
+                head.y,
+                l.x,
+                l.y,
                 color=arcade.color.WHITE,
                 line_width=3,
             )
             arcade.draw_line(
-                head.x, head.y, r.x, r.y,
-                color=arcade.color.WHITE,
-                line_width=3
+                head.x, head.y, r.x, r.y, color=arcade.color.WHITE, line_width=3
             )
             arcade.draw_text(
                 f"({self._player_velocity.x:.3f}, {self._player_velocity.y:.3f})",
-                head.x + 2, head.y + 2,
+                head.x + 2,
+                head.y + 2,
                 font_name="CMU Classical Serif",
                 italic=True,
                 font_size=18,
-                anchor_x = "left" if self._player_velocity.x > 0 else "right"
+                anchor_x="left" if self._player_velocity.x > 0 else "right",
             )
 
     def on_draw(self) -> bool | None:
@@ -382,6 +385,11 @@ class GameView(View):
         elif self._platform_3 not in self.terrain_sprites:
             self.terrain_sprites.append(self._platform_3)
             self._platform_3.visible = True
+
+        if not self._player_reversing_time and check_for_collision(
+            self._player, self._goal
+        ):
+            self.window.nav("to_win_menu")
 
         self._player.scale_y = (
             max(1 + -self._player_velocity[1] / SQUISH_FACTOR, 0.5) * 0.25

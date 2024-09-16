@@ -4,6 +4,7 @@ from chrono.nav import Navigation, CreationNavigation, PreserveNavigation
 from chrono.input import Input
 
 from chrono.menus.main_menu import MainMenu
+from chrono.menus.win_menu import WinMenu
 from chrono.game.game_view import GameView
 from chrono.game.physics_view import PhysicsView
 
@@ -24,6 +25,7 @@ class Window(_Window):
     def launch(cls):
         win = cls()
         win.register_nav("to_main_menu", CreationNavigation(MainMenu))
+        win.register_nav("to_win_menu", CreationNavigation(WinMenu))
         win._game_view = GameView()
         win.register_nav(
             "to_game_levelless",
