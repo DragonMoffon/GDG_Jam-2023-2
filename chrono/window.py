@@ -1,5 +1,6 @@
-from arcade import Window as _Window, View, draw_text
+from arcade import Window as _Window, View, draw_text, load_sound
 from chrono.nav import Navigation, CreationNavigation, PreserveNavigation
+from resources import get_wav_path
 
 from chrono.input import Input
 
@@ -13,6 +14,7 @@ class Window(_Window):
 
     def __init__(self):
         super().__init__(1280, 720, "Chrono - UoA GDG Jam 2", update_rate=1 / 1000)
+        self.nav_sound = load_sound(get_wav_path("blip_a"))
         Input.initialise()
 
         draw_text("", 0, 0)
@@ -70,4 +72,5 @@ class Window(_Window):
             print("Failed to Navigate")
             return v
         self.show_view(v)
+        self.nav_sound.play(0.1)
         return v
