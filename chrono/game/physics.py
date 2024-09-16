@@ -234,6 +234,23 @@ class StaticGravity(Force):
         body.apply_acceleration(self._pull)
 
 
+class StaticDrag(Force):
+    # Assuming everything has the same area and drag coeffcient
+
+    def __init__(
+        self,
+        bodies: list[Body],
+        drag_value: float,
+    ) -> None:
+        super().__init__(bodies)
+        self.drag: float = drag_value
+
+    def _iteration(self, body: Body):
+        direction = body.velocity.normalize()
+        speed = body.velocity.length_squared()
+        body.apply_force(0.5 * speed * self.drag * -direction)
+
+
 class Spring(Force):
     # Apply a force proportional to the spring's extension
 

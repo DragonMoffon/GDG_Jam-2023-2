@@ -1,6 +1,13 @@
 from arcade import View, Sprite, SpriteList, Vec2, XYWH
 
-from chrono.game.physics import Body, StaticGravity, Physics, Spring, StaticBounds
+from chrono.game.physics import (
+    Physics,
+    Body,
+    StaticGravity,
+    StaticDrag,
+    Spring,
+    StaticBounds,
+)
 
 SPRING_TENSION = 100.0
 
@@ -26,6 +33,8 @@ class PhysicsView(View):
             [self.box_body], Vec2(0.0, -1.0), 2000.0
         )
         self.physics.add_force(self.gravity)
+        self.drag: StaticDrag = StaticDrag([self.box_body], 0.005)
+        self.physics.add_force(self.drag)
         self.spring: Spring = None
 
         self.bounds: StaticBounds = StaticBounds(self.box_body, self.window.rect)
