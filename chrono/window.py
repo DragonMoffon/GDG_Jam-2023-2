@@ -12,7 +12,7 @@ from chrono.game.physics_view import PhysicsView
 class Window(_Window):
 
     def __init__(self):
-        super().__init__(1280, 720, "Chronocide - UoA GDG Jam 2", update_rate=1 / 1000)
+        super().__init__(1280, 720, "Chrono - UoA GDG Jam 2", update_rate=1 / 1000)
         Input.initialise()
 
         draw_text("", 0, 0)
