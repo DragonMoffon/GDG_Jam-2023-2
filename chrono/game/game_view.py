@@ -190,23 +190,39 @@ class GameView(View):
                 int(255 * cos(tau * GLOBAL_CLOCK.time) ** 2),
             ) * 4
             self._reverse_text.draw()
-            arcade.draw_text(
-                f"({self._player_velocity.x:.3f}, {self._player_velocity.y:.3f})",
-                self._player.position.x,
-                self._player.position.y + 25,
-                font_name="CMU Classical Serif",
-                italic=True,
-                font_size=18,
-            )
+
+            ### ARROW HACKS
+            head = self._player.position + (self._player_velocity / 10)
+            v_dir = self._player_velocity.normalize()
+            offset = Vec2(-v_dir.y, v_dir.x)
+            head = self._player.position + (self._player_velocity / 10)
+            l = head + ((-v_dir*10.0) + (10*offset))
+            r = head + ((-v_dir*10.0) - (10*offset))
             arcade.draw_line(
                 self._player.position.x,
                 self._player.position.y,
-                self._player.position.x + self._player_velocity.x / 10,
-                self._player.position.y + self._player_velocity.y / 10,
+                head.x, head.y,
                 color=arcade.color.WHITE,
                 line_width=3,
             )
-            # TODO: Dragon, I'd love this to have an arrowhead, but that's going to need vector math.
+            arcade.draw_line(
+                head.x, head.y, l.x, l.y,
+                color=arcade.color.WHITE,
+                line_width=3,
+            )
+            arcade.draw_line(
+                head.x, head.y, r.x, r.y,
+                color=arcade.color.WHITE,
+                line_width=3
+            )
+            arcade.draw_text(
+                f"({self._player_velocity.x:.3f}, {self._player_velocity.y:.3f})",
+                head.x + 2, head.y + 2,
+                font_name="CMU Classical Serif",
+                italic=True,
+                font_size=18,
+                anchor_x = "left" if self._player_velocity.x > 0 else "right"
+            )
 
     def on_draw(self) -> bool | None:
         if self._player_reversing_time:
