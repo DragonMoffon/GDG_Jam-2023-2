@@ -1,13 +1,6 @@
 import arcade
 
-from arcade import (
-    View,
-    Sprite,
-    Window,
-    Vec2,
-    SpriteList,
-    Text,
-)
+from arcade import View, Sprite, Window, Vec2, SpriteList, Text, check_for_collision
 from arcade.clock import GLOBAL_CLOCK, Clock
 
 from chrono.game.gif import GIF
@@ -73,7 +66,7 @@ class GameView(View):
         self._right_tex = load_texture("jiggycat").flip_horizontally()
         self._player: Sprite = Sprite(self._left_tex)
         self._player.size = 32, 32
-        self._player.position = Vec2(*self.window.center)
+        self._player.position = Vec2(self.window.center_x, 32.0)
         self._player_velocity: Vec2 = Vec2()
         self._player_jumping: bool = False
         self._player_reversing_time: bool = False
@@ -96,14 +89,15 @@ class GameView(View):
             self._platform_2_core + Vec2(cos(0.0), sin(0.0)) * self._platform_2_radius
         )
 
-        self._platform_3: Sprite = Sprite(load_texture("rectangle"))
-        self._platform_3.size = 64, 16
+        self._platform_3: Sprite = Sprite(load_texture("square"))
+        self._platform_3.size = 64, 64
+        self._platform_3.velocity = Vec2()
         self._platform_3.position = Vec2(*self.window.center)
-        self._playform_close_time: float = float("inf")
+        self._platform_close_time: float = 0.0
         self._platform_3_tigger: Sprite = Sprite(load_texture("square"))
         self._platform_3_tigger.color = (255, 0, 0, 120)
-        self._platform_3_tigger.size = 64, 64
-        self._platform_3_tigger.position = Vec2(self.window.width - 32.0, 32.0)
+        self._platform_3_tigger.size = self.window.width, 64
+        self._platform_3_tigger.position = Vec2(self.window.center_x, 32.0)
 
         self._platform_period = 8.0
 
@@ -150,7 +144,14 @@ class GameView(View):
             )
         )
         self.terrain_sprites.extend(
-            (self._platform, self._platform_2, self._ground, self._wall_1, self._wall_2)
+            (
+                self._platform,
+                self._platform_2,
+                self._platform_3,
+                self._ground,
+                self._wall_1,
+                self._wall_2,
+            )
         )
 
     def reset(self):
@@ -368,6 +369,19 @@ class GameView(View):
         self._contact_platform = contact_platform
         # Applying Velocity
         self._player.position += self._player_velocity * self._player_clock.dt
+
+        if not self._player_reversing_time and check_for_collision(
+            self._player, self._platform_3_tigger
+        ):
+            self._platform_close_time = self._manipulation_clock.time
+
+        if self._manipulation_clock.time_since(self._platform_close_time) < 0:
+            if self._platform_3 in self.terrain_sprites:
+                self.terrain_sprites.remove(self._platform_3)
+            self._platform_3.visible = False
+        elif self._platform_3 not in self.terrain_sprites:
+            self.terrain_sprites.append(self._platform_3)
+            self._platform_3.visible = True
 
         self._player.scale_y = (
             max(1 + -self._player_velocity[1] / SQUISH_FACTOR, 0.5) * 0.25
